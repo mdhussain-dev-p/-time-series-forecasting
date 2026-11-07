@@ -1,0 +1,14 @@
+TIME-SERIES FORECASTING — PACKAGE VALIDATION
+Validated: 2026-11-07T20:33:19+00:00
+Python used in this build environment: 3.13.5
+statsmodels used for complete source-data comparison: 0.14.6
+Dataset comparison: 732 of 732 dates and values matched exactly.
+Forecast execution: passed.
+pytest run 1: 21 passed in 1.04s
+pytest run 2: 21 passed in 1.20s
+Combined run script: passed and wrote logs/project_run.log.
+Markdown local links: all resolved.
+Python comments: 0.
+Python docstrings: 0.
+Note: this validation was run in the assistant build environment. Re-run it on the target Windows machine before publishing.
+Dependency lock installation: not freshly downloaded in the assistant build environment because its package index connection was unavailable. The lock file contains exact versions matching the successful Windows dependency installation recorded earlier. Run `python -m pip install -r requirements.lock` on the target Windows machine to verify that installation there.

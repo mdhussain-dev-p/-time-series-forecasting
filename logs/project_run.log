@@ -1,0 +1,38 @@
+TIME-SERIES FORECASTING — PROJECT RUN LOG
+Started: 2026-11-08T03:44:14+05:30
+Python: 3.13.7
+Packages: numpy==2.5.4, pandas==3.1.1, matplotlib==3.11.2, scikit-learn==1.9.1, pytest==9.2.0
+
+FORECAST GENERATION
+Command: python -m src.run_forecast
+Forecast comparison finished.
+
+                  Model  MAE_C  RMSE_C
+   Persistence baseline 0.9942  1.1717
+Seasonal naive baseline 0.9956  1.3362
+  Training monthly mean 0.6289  0.7545
+       Ridge regression 0.4058  0.5101
+
+Selected Ridge alpha: 0.01
+
+Ridge minus baseline MAE differences and 95% intervals:
+               baseline  mae_difference_c  ci_95_lower_c  ci_95_upper_c  bootstrap_replicates  block_length_months
+   Persistence baseline           -0.5884        -0.6724        -0.5047                  5000                   12
+Seasonal naive baseline           -0.5898        -0.9254        -0.2957                  5000                   12
+  Training monthly mean           -0.2231        -0.3267        -0.1193                  5000                   12
+
+Training: 1951-01 to 1998-12
+Testing:  1999-01 to 2010-12
+
+Updated the figures/ and results/ folders.
+Exit code: 0
+
+AUTOMATED TESTS
+Command: python -m pytest -q
+.....................                                                    [100%]
+21 passed in 2.70s
+Exit code: 0
+
+Finished: 2026-11-08T03:44:35+05:30
+Overall result: SUCCESS
+Forecast files were refreshed in figures/ and results/.
