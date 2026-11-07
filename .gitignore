@@ -1,15 +1,10 @@
-# Python bytecode and test cache
+.venv/
+venv/
 __pycache__/
 *.py[cod]
 .pytest_cache/
-
-# Local environments and editor settings
-.venv/
-venv/
 .env
 .vscode/
 .idea/
-
-# Operating-system files
 .DS_Store
 Thumbs.db

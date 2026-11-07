@@ -1,10 +1,8 @@
 [project]
 name = "monthly-sst-forecasting"
-version = "1.1.0"
-description = "A clear baseline comparison for monthly sea-surface temperature forecasting"
-requires-python = ">=3.10"
+version = "1.2.0"
+description = "A reproducible comparison of monthly sea-surface temperature forecasting methods"
+requires-python = ">=3.13,<3.14"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-python_files = ["test_*.py"]
-addopts = "-ra"
