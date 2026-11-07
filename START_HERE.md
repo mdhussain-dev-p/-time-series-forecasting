@@ -1,53 +1,52 @@
 # Start here — Time-Series Forecasting
 
-This is the complete project folder. The dataset is included, so you do not
-need to download a separate data file or set up MySQL.
+The complete project and its dataset are included in this folder. MySQL is not required.
 
-## Put the files in your `Time Series` folder
+## Open the project
 
-1. Download the project ZIP.
-2. Right-click the ZIP and choose **Extract All**.
-3. Set your new `Time Series` folder as the extraction destination.
-4. Open VS Code, choose **File → Open Folder**, and select `Time Series`.
-5. Open **Terminal → New Terminal**. Make sure the terminal is PowerShell and
-   that its current location is the project folder containing `src`, `data`,
-   and `requirements.txt`.
+1. Extract the ZIP into a folder named `Time-Series-Forecasting`.
+2. In VS Code, choose **File → Open Folder** and select that folder.
+3. Open **Terminal → New Terminal** and check that the terminal is in the folder containing `src`, `data`, `tests` and `requirements.lock`.
 
 ## Set up Python on Windows
 
-Run these commands in the VS Code PowerShell terminal, one at a time:
+The recorded Windows environment for this project used Python 3.13.7. Check your version first:
 
 ```powershell
 python --version
+```
+
+Create and activate the environment, then install the exact package versions from the lock file:
+
+```powershell
 python -m venv .venv
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
+python -m pip install -r requirements.lock
 ```
 
-If PowerShell blocks activation, run the following command in that terminal
-and try the activation command again:
+## Run the project and tests
+
+Run both commands from the repository root:
 
 ```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\.venv\Scripts\Activate.ps1
+python scripts/run_project.py
 ```
 
-## Run the experiment and tests
+This single command runs the forecast, runs the automated tests, and saves the terminal output to `logs/project_run.log`. You can also run `python -m src.run_forecast` and `python -m pytest` separately. Plain `pytest` is supported too.
 
-```powershell
-python -m src.run_forecast
-python -m pytest -q
-```
+## See the output
 
-A successful test run should report **24 passed**. The forecasting command
-prints the MAE and RMSE for both methods and refreshes the `figures` and
-`results` folders.
+- Open `figures/series_and_split.png` and `figures/test_forecasts.png` to see the historical series and test forecasts.
+- Open `figures/model_mae_comparison.png` to compare the four methods by MAE.
+- Open `results/metrics.csv` to compare all four forecasting methods.
+- Open `results/test_predictions.csv` to inspect each test-month prediction.
+- Open `results/alpha_validation.csv` to see how Ridge `alpha` was selected.
+- Open `results/mae_difference_bootstrap.csv` to inspect the MAE-difference confidence intervals.
+- Open `results/EXPERIMENT_NOTES.md` for the generated run summary.
+- Open `logs/project_run.log` to review the latest forecast and test output.
 
-## If something goes wrong
+For an explanation of the analysis, see [`docs/PROJECT_WALKTHROUGH.md`](docs/PROJECT_WALKTHROUGH.md) and [`docs/METHODOLOGY.md`](docs/METHODOLOGY.md). Dataset details are in [`data/DATA_SOURCE.md`](data/DATA_SOURCE.md).
 
-Do not guess at a fix or delete project files. Copy the complete error message
-from the terminal and share it so the issue can be checked properly.
-
-For an explanation of the experiment, open `README.md` and
-`docs/PROJECT_WALKTHROUGH.md`.
+If a command fails, copy the complete terminal error and review it before changing files or package versions.

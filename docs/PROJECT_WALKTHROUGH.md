@@ -1,85 +1,57 @@
 # Project walkthrough
 
-This guide explains what the project does and where to find each part. The aim
-is to make the work understandable, not just executable.
+## What the project does
 
-## Start with the main question
+The project tests whether Ridge regression can improve monthly Niño 1+2 temperature forecasts over three simple baselines. It uses a historical series, creates lagged inputs, selects model regularisation using only earlier data, and evaluates all methods on a later holdout period.
 
-A time-series model should be compared with a sensible simple forecast. Here,
-the simple forecast says that the next month's temperature will be the same as
-the previous month's observed temperature. Ridge regression gets a little more
-context by looking at several earlier months and the month of the year.
+## Main files
 
-## `src/forecasting.py`
+- `src/forecasting.py` contains data validation, feature creation, chronological splitting, Ridge alpha selection, baseline generation, scoring and the moving-block bootstrap.
+- `src/run_forecast.py` runs the full experiment and refreshes the charts, metrics, predictions, validation scores and notes.
+- `scripts/run_project.py` runs the forecast and the tests in one go, then saves a readable run log.
+- `tests/test_forecasting.py` checks data handling, feature timing, baseline calculations, chronological splitting, model selection, scoring and bootstrap reproducibility.
+- `data/elnino_monthly.csv` contains the supplied historical observations.
 
-This file contains the reusable parts of the analysis:
+## Run the analysis
 
-- `load_monthly_series()` reads the CSV and checks its dates and values.
-- `make_feature_table()` creates the lagged inputs and calendar features.
-- `split_by_time()` keeps the earlier dates for training and later dates for
-  testing.
-- `build_forecasting_model()` creates the scaling and Ridge regression
-  pipeline.
-- `score_forecast()` calculates MAE and RMSE after checking that the values
-  being compared line up.
-
-Keeping these steps in functions makes them easier to test and easier to read.
-
-## `src/run_forecast.py`
-
-This is the entry point for the full experiment. It loads the observations,
-creates features, trains the model, generates test forecasts, calculates the
-scores, and saves the charts and result files.
-
-Run it from the project folder with:
+From the project root, with the virtual environment active:
 
 ```powershell
-python -m src.run_forecast
+python scripts/run_project.py
 ```
 
-## `tests/test_forecasting.py`
+The script writes generated outputs to `figures/` and `results/`.
 
-The tests focus on mistakes that could quietly make a result unreliable. They
-check the date range, duplicate and missing months, missing values, feature
-timing, chronological splitting, metric calculations and whether the model
-can fit and return finite forecasts.
+## Understand the four methods
 
-Run them with:
+1. Persistence carries forward the previous month's observation.
+2. Seasonal naive carries forward the observation from the same month one year earlier.
+3. Training monthly mean uses the average for that calendar month, calculated only from the training period.
+4. Ridge regression uses several past observations and calendar features. Its `alpha` is selected with time-ordered validation inside the training period.
+
+## Forecast timing
+
+The forecasts are one-step-ahead forecasts using observed history; no recursive prediction is used. Earlier observed test-month values may be used as lags for later test months. This is not the same as forecasting many months ahead from a single starting date.
+
+## Review the generated files
+
+- `figures/series_and_split.png` shows the complete historical series and the beginning of the test period.
+- `figures/test_forecasts.png` compares observed test values with all four methods.
+- `figures/model_mae_comparison.png` compares the four MAE scores.
+- `results/metrics.csv` contains MAE and RMSE for each method.
+- `results/test_predictions.csv` contains month-by-month forecasts.
+- `results/alpha_validation.csv` records the validation score for each Ridge alpha candidate.
+- `results/mae_difference_bootstrap.csv` contains paired 95% intervals for MAE differences.
+- `results/EXPERIMENT_NOTES.md` summarises the latest execution.
+- `logs/project_run.log` records the latest forecast and test run.
+
+## Run the tests
+
+Both commands are supported from the project root:
 
 ```powershell
-python -m pytest -q
+pytest
+python -m pytest
 ```
 
-## What is a lag?
-
-A lag is an earlier observation. For a forecast for January 2001, `lag_1` is
-the observed value from December 2000 and `lag_12` is the observed value from
-January 2000. The tests check this timing so the model does not accidentally
-receive the value it is supposed to predict.
-
-## Why use a time-based split?
-
-A random split could put some later months in the training set and earlier
-months in the test set. That would not match the forecasting situation being
-studied. This project trains on the earlier dates and tests on the later dates.
-
-## What do the error measures mean?
-
-- **MAE** is the average absolute forecast error. It is easy to interpret in
-  the original temperature units.
-- **RMSE** also uses the original units, but larger errors have more influence
-  because the errors are squared before averaging.
-
-For both measures, lower is better. Neither score, on its own, proves that a
-model will work well on another dataset or time period.
-
-## Questions to check your understanding
-
-1. Why is the naive baseline included?
-2. Why are the observations kept in date order?
-3. What does `lag_12` mean for a forecast made in January?
-4. Is the Ridge model re-fitted during the test period?
-5. Why is the test result specific to this dataset and forecast setup?
-
-You should be able to answer these in your own words before presenting the
-project to someone else.
+The `pytest.ini` file sets the repository root on the import path.

@@ -1,48 +1,49 @@
 # Methodology
 
-## Forecasting question
+## Research question
 
-The experiment asks whether a Ridge regression model can improve on a
-persistence-style baseline for one-month-ahead sea-surface temperature
-forecasts in the bundled Niño 1+2 series.
+Does a Ridge regression model improve one-step-ahead forecasts of monthly Niño 1+2 sea-surface temperature compared with simple persistence, seasonal-naive and training-monthly-mean baselines?
 
-## Target and features
+## Target and predictors
 
-The target is the temperature in month *t*. The model is only given information
-that would be available before that month:
+The target is the observed temperature in month *t*. Predictors are available before that month:
 
-- temperature at *t − 1*
-- temperature at *t − 2*
-- temperature at *t − 3*
-- temperature at *t − 6*
-- temperature at *t − 12*
-- sine and cosine representations of the target month's calendar position
+- temperature at *t − 1*, *t − 2*, *t − 3*, *t − 6* and *t − 12*;
+- sine and cosine representations of the target calendar month.
 
-The sine/cosine terms represent the repeating nature of the calendar without
-treating December and January as far apart. The target temperature itself is
-kept separate from the feature columns.
+The first 12 observations are required to construct the longest lag. The target value is not included among the predictors.
 
-## Train/test split
+## Chronological split
 
-The lag of 12 months means the first 12 observations do not have a complete
-feature row. The remaining 720 rows are split in chronological order: 576 for
-training and 144 for testing. No random shuffle is used.
+The 720 rows remaining after feature creation are kept in date order. The first 576 rows (January 1951–December 1998) form the training period. The final 144 rows (January 1999–December 2010) form the final test period. No random shuffle is used.
+
+## Baselines
+
+- **Persistence:** the previous month's observed temperature.
+- **Seasonal naive:** the observed temperature from the same month one year earlier.
+- **Training monthly mean:** the mean temperature for each calendar month, calculated using only target observations in the training period and then applied to the test dates.
+
+The baselines are fixed comparisons; they do not use the final test outcomes to estimate their values.
+
+## Ridge model and alpha selection
+
+The Ridge pipeline standardises predictors and then fits `Ridge`. The regularisation value is not assigned by assumption. It is selected from `0.01`, `0.1`, `1`, `10`, `100` and `1000` using five expanding time-series validation splits within the training period. Each validation window contains 60 months. The alpha with the lowest mean validation MAE is selected, then the pipeline is refitted on all 576 training rows. The final 144-month test period is not involved in alpha selection.
 
 ## Forecast timing
 
-The model is fitted once on the training rows. For each month in the test
-period, earlier observed temperatures are available as lagged inputs. This is
-a rolling one-month-ahead setup. It is not equivalent to predicting the whole
-test period from information available only at the end of 1998.
+The reported evaluation uses **one-step-ahead forecasts using observed history; no recursive prediction**. At each test date, lag features can include actual observations from earlier dates, including earlier dates in the test period. The fitted Ridge model does not feed its own previous predictions back as later lag values. A recursive multi-month forecast would use model-generated earlier values and may be less accurate as errors accumulate; that forecast setup is not evaluated here.
 
-## Model and baseline
+## Metrics
 
-The baseline uses the previous month's observed temperature as the next
-month's forecast. The model is a pipeline containing `StandardScaler` and
-`Ridge(alpha=10.0)`. The pipeline ensures the scaling parameters are learnt
-from training data only.
+MAE is the average absolute error. RMSE is the square root of the mean squared error. Both are reported in degrees Celsius and lower values are better.
 
-## Evaluation
+## Uncertainty for MAE differences
 
-Both forecasts are evaluated on the same 144 test months using MAE and RMSE.
-The test period is not used to choose the Ridge regularisation value.
+For each baseline, the monthly absolute error from Ridge is paired with the monthly absolute error from that baseline. The reported difference is Ridge absolute error minus baseline absolute error, averaged across the test dates. A negative value favours Ridge.
+
+A circular moving-block bootstrap resamples paired monthly error differences in contiguous 12-month blocks, using 5,000 replicates and a fixed random seed (2026). The 2.5th and 97.5th percentiles form the approximate 95% interval. Resampling paired blocks preserves local month-to-month ordering better than independently resampling each month. This interval describes uncertainty in the paired test-period MAE difference; it is not a substitute for testing on multiple independent holdout periods.
+
+
+## How to read the uncertainty interval
+
+The bootstrap resamples paired monthly error differences in circular blocks of 12 consecutive months. Pairing keeps the two models' errors for a given month together, while the blocks retain some local month-to-month structure. The interval is an approximate description of uncertainty within this particular test window. It is not a prediction interval for future temperatures and it does not show how results would vary across entirely different test periods. The three comparisons are reported separately and are not adjusted for multiple comparisons.

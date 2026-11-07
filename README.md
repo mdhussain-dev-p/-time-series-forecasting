@@ -1,101 +1,144 @@
 # Monthly Sea-Surface Temperature Forecasting
 
-## Project overview
+## Overview
 
-This project compares a simple forecasting rule with a small machine-learning
-model. The question is practical: **does Ridge regression make a more accurate
-one-month-ahead forecast than simply carrying forward the previous month's
-sea-surface temperature?**
+This project studies one-step-ahead forecasts of monthly sea-surface temperature in the Pacific Ocean's Niño 1+2 region. It compares a Ridge regression model with three simple baselines so that the machine-learning result is judged against more than just the previous month's value.
 
-The work follows a straightforward process: inspect the observations, create
-features from earlier months, keep the dates in order, fit the model, compare
-both methods on the same test period, and save the results.
+The workflow covers data checks, lag and seasonal feature creation, time-ordered model selection, a final chronological test period, paired error comparisons, and generated visualisations.
 
 ## Dataset
 
-The project includes `data/elnino_monthly.csv`, so it can run without a separate
-download. It contains 732 monthly observations from January 1950 through
-December 2010. The values are monthly average sea-surface temperatures in
-degrees Celsius for the Niño 1+2 area of the Pacific Ocean.
+The included file [`data/elnino_monthly.csv`](data/elnino_monthly.csv) contains 732 monthly observations from January 1950 through December 2010, in degrees Celsius. It is a date-indexed reshaping of the El Niño dataset distributed by statsmodels. The upstream metadata attributes the observations to NOAA's National Weather Service ERSST.V3B dataset for Niño 1+2 and marks the data as public domain.
 
-The series is distributed with the `statsmodels` El Niño dataset and is
-attributed there to NOAA's ERSST.V3B data. The statsmodels data page identifies
-the dataset as public domain. See `data/DATA_SOURCE.md` for the source details
-and links.
+The local file was checked against all 732 monthly values in `statsmodels.datasets.elnino` version 0.14.6 on 8 November 2026. Every value matched exactly at the precision supplied by that dataset. For example, January 1950 is 23.11°C, February 1950 is 24.20°C, and December 2010 is 22.07°C. See [`data/DATA_SOURCE.md`](data/DATA_SOURCE.md) for the verification details and source links.
 
-## Methods
+## Forecast methods
 
-### 1. Naive baseline
+All four methods predict the temperature for month *t* using information available before month *t*.
 
-For each target month, the baseline uses the previous month's observed
-temperature as its forecast. It is deliberately simple and gives the model a
-clear point of comparison.
+1. **Persistence baseline:** uses the observed temperature from month *t − 1*.
+2. **Seasonal naive baseline:** uses the observed temperature from month *t − 12*.
+3. **Training monthly mean:** uses the average for the target calendar month, calculated from training-period target values only.
+4. **Ridge regression:** uses temperature lags of 1, 2, 3, 6 and 12 months, plus the target calendar month's sine and cosine. A `StandardScaler` and `Ridge` estimator are combined in a scikit-learn pipeline.
 
-### 2. Ridge regression
+### Ridge regularisation selection
 
-The model uses temperatures from 1, 2, 3, 6 and 12 months earlier. It also uses
-the calendar month, represented by sine and cosine values, to provide a simple
-way to account for the annual cycle.
+The Ridge `alpha` value is selected using only the training period. The candidate values are `0.01`, `0.1`, `1`, `10`, `100` and `1000`. Selection uses five expanding, time-ordered validation splits, each with a 60-month validation window. The candidate with the lowest mean validation MAE is then refitted on the complete training period. For this run, `alpha=0.01` was selected (mean validation MAE 0.3562°C). The final test period is not used to choose `alpha`.
 
-The model is a scikit-learn pipeline with two steps:
-
-1. `StandardScaler` puts the input features on comparable scales.
-2. `Ridge` regression fits a regularised linear model (`alpha=10.0`).
-
-The scaler is fitted as part of the pipeline using only the training data.
+The selected value and each candidate's validation scores are saved in [`results/alpha_validation.csv`](results/alpha_validation.csv).
 
 ## Evaluation design
 
-The first 12 months are needed to build the longest lag. That leaves 720 usable
-rows. The earliest 80% (576 months) are used for training, and the final 20%
-(144 months) are used for testing. The dates are never shuffled.
+The first 12 observations provide the longest lag, leaving 720 feature rows. The first 576 rows (January 1951 to December 1998) are used for training and time-ordered validation. The final 144 rows (January 1999 to December 2010) form the untouched final test period.
 
-The test period is January 1999 to December 2010. This is a **rolling
-one-month-ahead evaluation**: the model is fitted once on the training period,
-but once an actual test-month observation has arrived, it can be used as an
-input for the next month's forecast. This is not a 12-year forecast made once
-at the start of 1999.
+The test uses **one-step-ahead forecasts using observed history; no recursive prediction**. The model is fitted on the training period. When forecasting a test month, earlier actual observations are available as lag inputs, including observations from earlier test months that would already have arrived. The model does not feed its own previous predictions back into later forecasts. Multi-month forecasts made recursively may be less accurate as forecast errors can accumulate; that is a different task and is not evaluated here.
 
-The project reports two error measures:
+The project reports:
 
-- **MAE (Mean Absolute Error):** the average absolute difference between the
-  forecast and the observed temperature.
-- **RMSE (Root Mean Squared Error):** the square root of the average squared
-  error, which gives larger mistakes more influence.
+- **MAE (Mean Absolute Error):** average absolute forecast error, in degrees Celsius.
+- **RMSE (Root Mean Squared Error):** square root of the average squared forecast error, in degrees Celsius.
 
-Both are measured in degrees Celsius. Lower scores indicate smaller errors.
+Lower values indicate smaller errors.
 
-## Results from the bundled run
+## Final test results
 
-| Method | MAE (°C) | RMSE (°C) |
+Results below are regenerated by `python -m src.run_forecast`.
+
+| Model | MAE (°C) | RMSE (°C) |
 |---|---:|---:|
-| Naive baseline | 0.9942 | 1.1717 |
-| Ridge regression | 0.4184 | 0.5344 |
+| Persistence baseline | 0.9942 | 1.1717 |
+| Seasonal naive baseline | 0.9956 | 1.3362 |
+| Training monthly mean | 0.6289 | 0.7545 |
+| Ridge regression | 0.4058 | 0.5101 |
 
-On this particular test period, Ridge regression reduced MAE by approximately
-57.9% compared with the naive baseline. These results are reproduced by the
-project script and are not a guarantee that Ridge will outperform a baseline
-on every dataset.
+Ridge has the lowest MAE and RMSE of these four methods on this particular holdout period. The training monthly mean is the strongest of the three simple baselines by MAE. Ridge's MAE is 0.2231°C lower than that baseline on the test period.
 
-The project saves:
+### Uncertainty for MAE differences
 
-- `results/metrics.csv` — MAE and RMSE for each method.
-- `results/test_predictions.csv` — observed values and both forecasts for each
-  test month.
-- `results/EXPERIMENT_NOTES.md` — a short report written from the latest run.
-- `figures/series_and_split.png` — the complete series and the start of the
-  test period.
-- `figures/test_forecasts.png` — observed values and forecasts during testing.
+The project also estimates paired 95% confidence intervals for the difference in absolute error, defined as **Ridge MAE minus baseline MAE**. It uses a circular moving-block bootstrap with 5,000 replicates and 12-month blocks to retain short-range month-to-month structure in the paired errors. Negative differences favour Ridge.
 
-## Run it on Windows
+| Comparison | MAE difference (°C) | 95% CI (°C) |
+|---|---:|---:|
+| Ridge − persistence | -0.5884 | [-0.6724, -0.5047] |
+| Ridge − seasonal naive | -0.5898 | [-0.9254, -0.2957] |
+| Ridge − training monthly mean | -0.2231 | [-0.3267, -0.1193] |
 
-Python 3.10 or newer is recommended. The dataset is already included.
+These are approximate intervals for the paired error difference within this single historical test period. They do not replace validation on other time periods or regions. Full results are saved in [`results/mae_difference_bootstrap.csv`](results/mae_difference_bootstrap.csv).
+
+## Generated outputs
+
+Running the project refreshes the following files:
+
+- [`results/metrics.csv`](results/metrics.csv) — MAE and RMSE for all four methods.
+- [`results/test_predictions.csv`](results/test_predictions.csv) — observed values and each method's predictions for the 144 test months.
+- [`results/alpha_validation.csv`](results/alpha_validation.csv) — time-ordered validation scores for the Ridge candidates.
+- [`results/mae_difference_bootstrap.csv`](results/mae_difference_bootstrap.csv) — paired moving-block bootstrap intervals.
+- [`results/EXPERIMENT_NOTES.md`](results/EXPERIMENT_NOTES.md) — generated run summary. This is the only copy of the experiment notes.
+- [`logs/project_run.log`](logs/project_run.log) — output from the latest combined forecast and test run.
+- [`figures/series_and_split.png`](figures/series_and_split.png) — full series and the final test-period boundary.
+- [`figures/test_forecasts.png`](figures/test_forecasts.png) — observed test values and all four forecasts.
+- [`figures/model_mae_comparison.png`](figures/model_mae_comparison.png) — a simple view of the MAE score for each method.
+
+## Reproducible setup
+
+The recorded Windows environment used **Python 3.13.7**. The exact package versions resolved in that successful clean virtual-environment installation are listed in [`requirements.lock`](requirements.lock). The `.python-version` file records the interpreter version. For a reproducible installation, use the lock file rather than the flexible version ranges in `requirements.txt`.
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
+python -m pip install -r requirements.lock
 python -m src.run_forecast
-python -m pytest -q
+python -m pytest
 ```
+
+`pytest.ini` adds the repository root to the import path, so both `pytest` and `python -m pytest` can discover `src` without relying on the current shell's import settings.
+
+For the full Windows/VS Code instructions, see [`START_HERE.md`](START_HERE.md). For the design and assumptions, see [`docs/METHODOLOGY.md`](docs/METHODOLOGY.md) and [`docs/PROJECT_WALKTHROUGH.md`](docs/PROJECT_WALKTHROUGH.md). To publish the project, see [`docs/GITHUB_PUBLISHING.md`](docs/GITHUB_PUBLISHING.md).
+
+## Project structure
+
+```text
+Time-Series-Forecasting/
+├── data/
+│   ├── DATA_SOURCE.md
+│   └── elnino_monthly.csv
+├── docs/
+│   ├── GITHUB_PUBLISHING.md
+│   ├── METHODOLOGY.md
+│   └── PROJECT_WALKTHROUGH.md
+├── figures/
+│   ├── model_mae_comparison.png
+│   ├── series_and_split.png
+│   └── test_forecasts.png
+├── results/
+│   ├── alpha_validation.csv
+│   ├── mae_difference_bootstrap.csv
+│   ├── metrics.csv
+│   ├── test_predictions.csv
+│   └── EXPERIMENT_NOTES.md
+├── logs/
+│   ├── package_validation.log
+│   └── project_run.log
+├── scripts/
+│   └── run_project.py
+├── src/
+│   ├── __init__.py
+│   ├── forecasting.py
+│   └── run_forecast.py
+├── tests/
+│   └── test_forecasting.py
+├── .gitignore
+├── .python-version
+├── LICENSE
+├── pyproject.toml
+├── pytest.ini
+├── requirements.lock
+├── requirements.txt
+├── README.md
+└── START_HERE.md
+```
+
+## Limitations
+
+This is a study of one historical monthly series from one ocean region. It uses one final chronological holdout, and its bootstrap interval quantifies uncertainty in the paired test errors within that holdout; it does not measure how results vary across independent future periods. The model is not a climate model or an operational forecasting service. Other regions, forecast horizons, and recursive multi-month forecasts would need separate data, validation and evaluation.

@@ -1,49 +1,32 @@
-# Publish the project on GitHub
+# Publish updates to GitHub
 
-This folder is ready to become a Git repository. The ZIP intentionally does
-not contain a `.git` directory; Git will create that on your computer.
+The repository is already published. Use the following process when publishing later changes.
 
-## 1. Create an empty repository on GitHub
-
-Create a public repository named `time-series-forecasting`. Leave the options
-to add a README, `.gitignore` or licence unchecked because those files are
-already included here.
-
-## 2. Open the project terminal
-
-In VS Code, open the `Time Series` folder. Select **Terminal → New Terminal**
-and make sure the terminal is in the folder that contains `README.md`, `src`
-and `data`.
-
-## 3. Create the local Git repository
-
-Run these commands one by one in PowerShell:
+## Update the local copy first
 
 ```powershell
-git init -b main
+git status --short
+git pull --ff-only origin main
+```
+
+If `git status --short` lists changes you have not committed, review them before pulling.
+
+## Run the project checks
+
+```powershell
+python -m pip install -r requirements.lock
+python -m src.run_forecast
+python -m pytest
+```
+
+## Review and commit the changes
+
+```powershell
+git status --short
 git add .
-git status
-git commit -m "Add monthly temperature forecasting project"
+git diff --cached --check
+git commit -m "Improve forecasting baselines and evaluation"
+git push origin main
 ```
 
-Before committing, check the `git status` output. The project files should be
-listed. The `.venv` folder, if created, should be ignored automatically.
-
-## 4. Connect and push
-
-Replace the example URL with the URL of your own empty GitHub repository:
-
-```powershell
-git remote add origin https://github.com/YOUR-USERNAME/time-series-forecasting.git
-git push -u origin main
-```
-
-If GitHub asks you to authenticate, complete its normal browser sign-in flow.
-Do not paste account passwords or access tokens into source files or README
-text.
-
-## 5. Check the published repository
-
-Refresh the repository page and check that it contains `README.md`, `src`,
-`tests`, `data`, `figures`, `results` and `docs`. Open the README on GitHub to
-make sure the project overview and results display correctly.
+Do not add `.venv/`, local editor settings, credentials or private data. The `.gitignore` file excludes the virtual environment and common local files.
