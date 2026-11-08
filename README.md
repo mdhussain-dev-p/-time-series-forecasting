@@ -137,8 +137,3 @@ Time-Series-Forecasting/
 ├── requirements.txt
 ├── README.md
 └── START_HERE.md
-```
-
-## Limitations
-
-This is a study of one historical monthly series from one ocean region. It uses one final chronological holdout, and its bootstrap interval quantifies uncertainty in the paired test errors within that holdout; it does not measure how results vary across independent future periods. The model is not a climate model or an operational forecasting service. Other regions, forecast horizons, and recursive multi-month forecasts would need separate data, validation and evaluation.
