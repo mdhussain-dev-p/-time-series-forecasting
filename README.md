@@ -83,19 +83,6 @@ Running the project refreshes the following files:
 
 The recorded Windows environment used **Python 3.13.7**. The exact package versions resolved in that successful clean virtual-environment installation are listed in [`requirements.lock`](requirements.lock). The `.python-version` file records the interpreter version. For a reproducible installation, use the lock file rather than the flexible version ranges in `requirements.txt`.
 
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-python -m pip install -r requirements.lock
-python -m src.run_forecast
-python -m pytest
-```
-
-`pytest.ini` adds the repository root to the import path, so both `pytest` and `python -m pytest` can discover `src` without relying on the current shell's import settings.
-
-For the full Windows/VS Code instructions, see [`START_HERE.md`](START_HERE.md). For the design and assumptions, see [`docs/METHODOLOGY.md`](docs/METHODOLOGY.md) and [`docs/PROJECT_WALKTHROUGH.md`](docs/PROJECT_WALKTHROUGH.md). To publish the project, see [`docs/GITHUB_PUBLISHING.md`](docs/GITHUB_PUBLISHING.md).
-
 ## Project structure
 
 ```text
